@@ -1,3 +1,15 @@
+/**
+ * @file main.cpp
+ * @author ghulam mustafa (ghulam2545@gmail.com)
+ * @brief Flappy Bird is a mobile game developed by Vietnamese video game artist and programmer Dong Nguyen. This is the same, cloned
+ *        with the help of c++ and SFML library.
+ * @version 0.1
+ * @date 2022-06-28
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <ctime>
@@ -7,10 +19,11 @@
 namespace gh {
 
     // forward declation of the classes
-    class Sound;
-    class Texture;
-    class Bird;
-    class Game;
+    class Sound;    // organising sound related things
+    class Texture;  // organising sound related things
+    class Bird;     // organising sound related things
+    class Pipe;     // organising sound related things
+    class Game;     // organising sound related things
 
     class Sound {
        public:
@@ -36,70 +49,31 @@ namespace gh {
        protected:
         std::vector<sf::Texture> birds;
         sf::Texture background;
-
         sf::Texture gameOver;
         sf::Texture title;
     };
 
+    enum GameState { playing, not_playing, game_over };
+
     class Bird : protected Texture {
        public:
+        Bird() : speed(0.0), birdFrameCount(0) {}
         void load();
         void draw(sf::RenderWindow& window);
-        void update(int whichOne);
+        void update(gh::GameState& state, int& gameFrameCount);
         std::vector<float> getPos();
 
         sf::Sprite sprite;
         double speed;
-        int birdFrameCount = 0;
+        int birdFrameCount;
     };
-
-    enum GameState { playing, not_playing, game_over };
 
     class Pipe : protected Texture {
        public:
-        auto load(gh::GameState& state, int gameFrameCount, std::vector<sf::Sprite>& pipes) {
-            gh::Texture::load();
-            if (state == gh::playing && gameFrameCount % 60 == 0) {
-                int len = rand() % 275 + 75;
-                int gap = 180;  // vertical gap between pipes
-
-                // lower pipe
-                lowerPipe.setTexture(gh::Texture::pipe);
-                lowerPipe.setPosition(1000, len + gap);
-                lowerPipe.setScale(1, 2);
-
-                // upper pipe
-                upperPipe.setTexture(gh::Texture::pipe);
-                upperPipe.setPosition(1000, len);
-                upperPipe.setScale(1, -2);
-
-                pipes.push_back(lowerPipe);
-                pipes.push_back(upperPipe);
-            }
-        }
-        void move(gh::GameState& state, std::vector<sf::Sprite>& pipes) {
-            if (state == gh::playing) {
-                for (auto& e : pipes) {
-                    e.move(-6, 0);
-                }
-            }
-        }
-        void erase(int gameFrameCount, std::vector<sf::Sprite>& pipes) {
-            if (gameFrameCount % 100 == 0) {
-                auto startitr = pipes.begin();
-                auto enditr = pipes.begin();
-
-                for (; enditr != pipes.end(); enditr++) {
-                    if ((*enditr).getPosition().x > -104) {
-                        break;
-                    }
-                }
-
-                pipes.erase(startitr, enditr);
-            }
-        }
-
-        bool collision() {}
+        void load(gh::GameState& state, int gameFrameCount, std::vector<sf::Sprite>& pipes);
+        void move(gh::GameState& state, std::vector<sf::Sprite>& pipes);
+        void erase(int gameFrameCount, std::vector<sf::Sprite>& pipes);
+        bool collision(std::vector<float>& one, std::vector<float>& two);
 
        private:
         sf::Sprite lowerPipe;
@@ -138,6 +112,7 @@ namespace gh {
 ////////////////////////////////////////////////////////////////////
 // start of main
 ////////////////////////////////////////////////////////////////////
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(900, 600), "Flappy Bird");
     window.setFramerateLimit(60);
@@ -157,24 +132,9 @@ int main() {
     app.load();
 
     while (window.isOpen()) {
-        bird.update(0);
+        bird.update(app.state, app.gameFrameCount);  // drop bird and update wings
 
-        if (app.state == gh::playing) {
-            if (app.gameFrameCount % 2 == 0) {
-                ++bird.birdFrameCount;
-            }
-            if (bird.birdFrameCount == 3) {
-                bird.birdFrameCount = 0;
-            }
-        }
-
-        bird.update(bird.birdFrameCount);
-
-        if (app.state == gh::playing) {
-            bird.sprite.move(0, bird.speed);
-            bird.speed += 0.5;
-        }
-
+        // game over if hits ground
         auto currPos = bird.getPos();
         if (app.state == gh::playing) {
             if (currPos[1] < 0) {
@@ -188,11 +148,12 @@ int main() {
             }
         }
 
+        // pipe working
         pipe.load(app.state, app.gameFrameCount, allPipes);
         pipe.move(app.state, allPipes);
         pipe.erase(app.gameFrameCount, allPipes);
 
-        // count the score
+        // add up score
         for (auto& e : allPipes) {
             if (app.state == gh::playing && e.getPosition().x == 250) {
                 ++app.score;
@@ -205,16 +166,33 @@ int main() {
             }
         }
 
-        // go for collision
+        // checking for collision
         if (app.state == gh::playing) {
+            std::vector<float> pos(4);
             for (auto& e : allPipes) {
+                if (e.getScale().y > 0) {
+                    pos[0] = e.getPosition().x;
+                    pos[1] = e.getPosition().y;
+                    pos[2] = 52 * e.getScale().x;
+                    pos[3] = 320 * e.getScale().y;
+                } else {
+                    pos[2] = 52 * e.getScale().x;
+                    pos[3] = -320 * e.getScale().y;
+                    pos[0] = e.getPosition().x;
+                    pos[1] = e.getPosition().y - pos[3];
+                }
+                if (pipe.collision(currPos, pos)) {
+                    bird.speed = 0;
+                    app.state = gh::game_over;
+                    sound.playHit();
+                }
             }
         }
 
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
-                // close the window
+                // please close the window
                 window.close();
             } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) {
                 if (app.state == gh::not_playing) {
@@ -233,6 +211,7 @@ int main() {
         }
 
         window.clear();
+
         app.drawBackground(window);
         if (app.state == gh::not_playing) {
             app.drawTitle(window);
@@ -294,9 +273,25 @@ namespace gh {
 
     void Bird::draw(sf::RenderWindow& window) { window.draw(sprite); }
 
-    void Bird::update(int whichOne) {
+    void Bird::update(gh::GameState& state, int& gameFrameCount) {
         gh::Texture::load();
-        sprite.setTexture(birds[whichOne]);
+        sprite.setTexture(birds[0]);
+
+        if (state == gh::playing) {
+            if (gameFrameCount % 2 == 0) {
+                ++birdFrameCount;
+            }
+            if (birdFrameCount == 3) {
+                birdFrameCount = 0;
+            }
+        }
+
+        sprite.setTexture(birds[birdFrameCount]);
+
+        if (state == gh::playing) {
+            sprite.move(0, speed);
+            speed += 0.5;
+        }
     }
 
     std::vector<float> Bird::getPos() {
@@ -307,6 +302,52 @@ namespace gh {
 
         std::vector<float> res = {x, y, width, height};
         return res;
+    }
+
+    void Pipe::load(gh::GameState& state, int gameFrameCount, std::vector<sf::Sprite>& pipes) {
+        gh::Texture::load();
+        if (state == gh::playing && gameFrameCount % 60 == 0) {
+            int len = rand() % 275 + 75;
+            int gap = 150;  // vertical gap between pipes
+
+            // lower pipe
+            lowerPipe.setTexture(gh::Texture::pipe);
+            lowerPipe.setPosition(1000, len + gap);
+            lowerPipe.setScale(1, 2);
+
+            // upper pipe
+            upperPipe.setTexture(gh::Texture::pipe);
+            upperPipe.setPosition(1000, len);
+            upperPipe.setScale(1, -2);
+
+            pipes.push_back(lowerPipe);
+            pipes.push_back(upperPipe);
+        }
+    }
+
+    void Pipe::move(gh::GameState& state, std::vector<sf::Sprite>& pipes) {
+        if (state == gh::playing) {
+            for (auto& e : pipes) {
+                e.move(-5.5, 0);  // maintain speed of pipes and horz gap
+            }
+        }
+    }
+
+    void Pipe::erase(int gameFrameCount, std::vector<sf::Sprite>& pipes) {
+        if (gameFrameCount % 100 == 0) {
+            auto start = pipes.begin();
+            auto end = pipes.begin();
+
+            for (auto& e : pipes) {
+                if (e.getPosition().x > -104) break;
+            }
+            pipes.erase(start, end);
+        }
+    }
+
+    bool Pipe::collision(std::vector<float>& one, std::vector<float>& two) {
+        if (one[0] + one[2] >= two[0] && one[0] <= two[0] + two[2] && one[1] + one[3] >= two[1] && one[1] <= two[1] + two[3]) return true;
+        return false;
     }
 
     void Game::load() {
