@@ -1,10 +1,7 @@
 I'll update README later.
 <br><br>
 
-<center>
-<img src="./out/out-1.png" width="700px"></img>
-</center>
-<br>
-<center>
-<img src="./out/out-2.png" width="700px"></img>
-</center>
+<p float="left">
+<img src="https://github.com/ghulam2545/flappy-bird/blob/master/out/out-1.PNG" width="500px"></img>
+<img src="https://github.com/ghulam2545/flappy-bird/blob/master/out/out-2.PNG" width="500px"></img>
+</p>
