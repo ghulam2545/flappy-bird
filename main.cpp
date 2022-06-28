@@ -1,5 +1,3 @@
-
-
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <ctime>
@@ -59,32 +57,53 @@ namespace gh {
 
     class Pipe : protected Texture {
        public:
-        std::vector<sf::Sprite>& genratePipe(gh::GameState& state, int gameFrameCount) {
+        auto load(gh::GameState& state, int gameFrameCount, std::vector<sf::Sprite>& pipes) {
             gh::Texture::load();
-            if (state == gh::playing && gameFrameCount % 110 == 0) {
+            if (state == gh::playing && gameFrameCount % 60 == 0) {
                 int len = rand() % 275 + 75;
                 int gap = 180;  // vertical gap between pipes
 
                 // lower pipe
-                sf::Sprite lowerPipe;
                 lowerPipe.setTexture(gh::Texture::pipe);
-                lowerPipe.setPosition(900, len + gap);
+                lowerPipe.setPosition(1000, len + gap);
                 lowerPipe.setScale(1, 2);
 
                 // upper pipe
-                sf::Sprite upperPipe;
                 upperPipe.setTexture(gh::Texture::pipe);
-                upperPipe.setPosition(900, len);
+                upperPipe.setPosition(1000, len);
                 upperPipe.setScale(1, -2);
 
                 pipes.push_back(lowerPipe);
                 pipes.push_back(upperPipe);
             }
-            return pipes;
+        }
+        void move(gh::GameState& state, std::vector<sf::Sprite>& pipes) {
+            if (state == gh::playing) {
+                for (auto& e : pipes) {
+                    e.move(-6, 0);
+                }
+            }
+        }
+        void erase(int gameFrameCount, std::vector<sf::Sprite>& pipes) {
+            if (gameFrameCount % 100 == 0) {
+                auto startitr = pipes.begin();
+                auto enditr = pipes.begin();
+
+                for (; enditr != pipes.end(); enditr++) {
+                    if ((*enditr).getPosition().x > -104) {
+                        break;
+                    }
+                }
+
+                pipes.erase(startitr, enditr);
+            }
         }
 
+        bool collision() {}
+
        private:
-        std::vector<sf::Sprite> pipes;
+        sf::Sprite lowerPipe;
+        sf::Sprite upperPipe;
     };
 
     class Game : protected Texture {
@@ -132,6 +151,7 @@ int main() {
     bird.load();
 
     gh::Pipe pipe;
+    std::vector<sf::Sprite> allPipes;
 
     gh::Game app;
     app.load();
@@ -140,7 +160,7 @@ int main() {
         bird.update(0);
 
         if (app.state == gh::playing) {
-            if (app.gameFrameCount % 3 == 0) {
+            if (app.gameFrameCount % 2 == 0) {
                 ++bird.birdFrameCount;
             }
             if (bird.birdFrameCount == 3) {
@@ -168,29 +188,28 @@ int main() {
             }
         }
 
-        // TODO :
-        // auto pipes = pipe.genratePipe(app.state, app.gameFrameCount);
+        pipe.load(app.state, app.gameFrameCount, allPipes);
+        pipe.move(app.state, allPipes);
+        pipe.erase(app.gameFrameCount, allPipes);
 
-        // move pipes
-        // if (app.state == gh::playing) {
-        //     for (auto& e : pipes) {
-        //         e.move(-3, 0);
-        //     }
-        // }
+        // count the score
+        for (auto& e : allPipes) {
+            if (app.state == gh::playing && e.getPosition().x == 250) {
+                ++app.score;
+                sound.playScore();
 
-        // remove pipes if offscreen
-        // if (app.gameFrameCount % 100 == 0) {
-        //     auto startitr = pipes.begin();
-        //     auto enditr = pipes.begin();
+                if (app.score > app.highScore) {
+                    app.highScore = app.score;
+                }
+                break;
+            }
+        }
 
-        //     for (; enditr != pipes.end(); enditr++) {
-        //         if ((*enditr).getPosition().x > -104) {
-        //             break;
-        //         }
-        //     }
-
-        //     pipes.erase(startitr, enditr);
-        // }
+        // go for collision
+        if (app.state == gh::playing) {
+            for (auto& e : allPipes) {
+            }
+        }
 
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -206,9 +225,10 @@ int main() {
                     sound.playFly();
                 }
             } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape && app.state == gh::game_over) {
+                app.state = gh::playing;
                 bird.load();
                 app.score = 0;
-                // clear pipes...
+                allPipes.clear();
             }
         }
 
@@ -217,16 +237,17 @@ int main() {
         if (app.state == gh::not_playing) {
             app.drawTitle(window);
         }
+
+        for (auto& e : allPipes) window.draw(e);
+        bird.draw(window);
+        app.drawScore(window);
         if (app.state == gh::game_over) {
             app.drawGameOver(window);
         }
-        app.drawScore(window);
-        bird.draw(window);
-        // for (auto& e : pipes) window.draw(e);
 
         window.display();
 
-        ++app.gameFrameCount;
+        app.gameFrameCount += 1;
     }
 
     return 0;
@@ -267,7 +288,7 @@ namespace gh {
     }
 
     void Bird::load() {
-        sprite.setPosition(250, 300);
+        sprite.setPosition(250, 310);
         sprite.setScale(1.6, 1.6);
     }
 
@@ -304,26 +325,30 @@ namespace gh {
         this->title.setPosition(250, 110);
 
         this->gameOver.setTexture(gh::Texture::gameOver);
-        this->gameOver.setPosition(270, 150);
+        this->gameOver.setPosition(280, 150);
         this->gameOver.setScale(1.8, 1.8);
 
         scoreText.setFont(font);
         scoreText.setFillColor(sf::Color::White);
         scoreText.setCharacterSize(35);
-        scoreText.setString("SCORE : " + std::to_string(score));
         scoreText.setPosition(15, 10);
 
         highScoreText.setFont(font);
         highScoreText.setFillColor(sf::Color::White);
         highScoreText.setCharacterSize(25);
-        highScoreText.setString("HIGH SCORE : " + std::to_string(highScore));
         highScoreText.setPosition(15, 55);
 
         startText.setFont(font);
         startText.setFillColor(sf::Color::White);
         startText.setCharacterSize(35);
         startText.setString("Press SPACE to play.");
-        startText.setPosition(270, 240);
+        startText.setPosition(270, 230);
+
+        continueText.setFont(font);
+        continueText.setFillColor(sf::Color::White);
+        continueText.setCharacterSize(35);
+        continueText.setString("Press ESC to continue.");
+        continueText.setPosition(260, 250);
     }
 
     void Game::drawBackground(sf::RenderWindow& window) {
@@ -337,9 +362,14 @@ namespace gh {
         window.draw(startText);
     }
 
-    void Game::drawGameOver(sf::RenderWindow& window) { window.draw(this->gameOver); }
+    void Game::drawGameOver(sf::RenderWindow& window) {
+        window.draw(this->gameOver);
+        window.draw(this->continueText);
+    }
 
     void Game::drawScore(sf::RenderWindow& window) {
+        scoreText.setString("SCORE : " + std::to_string(score));
+        highScoreText.setString("HIGH SCORE : " + std::to_string(highScore));
         window.draw(scoreText);
         window.draw(highScoreText);
     }
