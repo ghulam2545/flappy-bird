@@ -20,10 +20,10 @@ namespace gh {
 
     // forward declation of the classes
     class Sound;    // organising sound related things
-    class Texture;  // organising sound related things
-    class Bird;     // organising sound related things
-    class Pipe;     // organising sound related things
-    class Game;     // organising sound related things
+    class Texture;  // organising picture related things
+    class Bird;     // Our bird related things
+    class Pipe;     // Pipe related things
+    class Game;     // Application related things
 
     class Sound {
        public:
@@ -306,7 +306,7 @@ namespace gh {
 
     void Pipe::load(gh::GameState& state, int gameFrameCount, std::vector<sf::Sprite>& pipes) {
         gh::Texture::load();
-        if (state == gh::playing && gameFrameCount % 60 == 0) {
+        if (state == gh::playing && gameFrameCount % 65 == 0) {
             int len = rand() % 275 + 75;
             int gap = 150;  // vertical gap between pipes
 
@@ -328,7 +328,7 @@ namespace gh {
     void Pipe::move(gh::GameState& state, std::vector<sf::Sprite>& pipes) {
         if (state == gh::playing) {
             for (auto& e : pipes) {
-                e.move(-5.5, 0);  // maintain speed of pipes and horz gap
+                e.move(-5, 0);  // maintain speed of pipes and horz gap
             }
         }
     }
