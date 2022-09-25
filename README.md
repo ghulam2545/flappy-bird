@@ -1,7 +1,5 @@
 I'll update README later.
 <br><br>
 
-<p float="left">
-<img src="https://github.com/ghulam2545/flappy-bird/blob/master/out/out-1.PNG" width="420px"></img>
-<img src="https://github.com/ghulam2545/flappy-bird/blob/master/out/out-2.PNG" width="420px"></img>
-</p>
+![out-1](https://user-images.githubusercontent.com/75310406/192144602-89f008d1-3100-4b0e-a8a2-d7d349f719d7.PNG)
+![out-2](https://user-images.githubusercontent.com/75310406/192144629-fca31fa0-0904-4180-b59f-1d33b52a162d.PNG)
