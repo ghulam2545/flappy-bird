@@ -14,11 +14,11 @@ It includes:
 
 
 ## Compilation
-You may refer CMake or something else, but I have just below lines.
+I have configured CMake with VSCode.
 ```
-g++ main.cpp ^
- -o app.exe -IC:\SFML-2.5.1\include -LC:\SFML-2.5.1\lib ^
- -lmingw32 -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system -lsfml-main
+cmake -G "MinGW Makefiles" .
+make
+./flappy-bird.exe
 ```
 ## Dependency
 Most parts are primitive c++ code and OOPs, also I have used SFML (An Open Source Library) for achieving window creation and other 2D rendering stuff.
