@@ -16,6 +16,8 @@ It includes:
 ## Compilation
 I have configured CMake with VSCode.
 ```
+mkdir build
+cd build
 cmake -G "MinGW Makefiles" .
 make
 ./flappy-bird.exe
